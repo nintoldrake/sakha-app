@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>СахаАвтоПомощь</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Unbounded:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0F172A; --muted: #5B6474; --line: #E3E7ED; --bg: #F2F4F7; --card: #FFFFFF;
+    --night: #0F1B2D; --night2: #1F2E45; --fire: #C2410C; --fire-soft: #FFF1E8; --fire-ink: #9A3412;
+    --blue: #1D4ED8; --blue-soft: #EEF2FF; --ok: #15803D;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: Manrope, system-ui, sans-serif; }
+  button, input, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  .screen { display: none; min-height: 100vh; padding: 16px 16px 120px; flex-direction: column; gap: 16px; }
+  .screen.active { display: flex; }
+  h1 { margin: 4px 0 0; font: 700 24px Unbounded, sans-serif; letter-spacing: -.01em; }
+  h2 { margin: 0; font: 700 20px Unbounded, sans-serif; }
+  .label { font-weight: 700; font-size: 13px; color: var(--muted); }
+  .hint { font-weight: 500; font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+  .hero { all: unset; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 18px;
+    border-radius: 20px; background: var(--night); color: #fff; cursor: pointer; }
+  .hero .top { display: flex; justify-content: space-between; align-items: center; }
+  .hero .ico { width: 48px; height: 48px; border-radius: 14px; background: var(--fire); display: flex; align-items: center; justify-content: center; }
+  .badge { padding: 5px 10px; border-radius: 999px; background: var(--night2); color: #FDBA74; font-weight: 800; font-size: 12px; }
+  .hero .t { font: 700 20px Unbounded, sans-serif; }
+  .hero .s { margin-top: 6px; font-weight: 500; font-size: 14px; color: #CBD5E1; }
+  .hero .bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid #23344F; font-weight: 600; font-size: 14px; color: #CBD5E1; }
+  .hero .bottom b { color: #fff; }
+  .go { display: flex; align-items: center; gap: 4px; color: #fff; font-weight: 800; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tile { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 10px; padding: 14px;
+    border-radius: 16px; background: var(--card); }
+  .tile .ico { width: 40px; height: 40px; border-radius: 12px; background: var(--fire-soft); color: var(--fire); display: flex; align-items: center; justify-content: center; }
+  .tile .t { font-weight: 700; font-size: 15px; }
+  .tile .s { font-weight: 500; font-size: 12px; color: var(--muted); }
+  .tile:active, .hero:active { transform: scale(.98); }
+
+  .head { display: flex; align-items: center; gap: 10px; }
+  .head .ico { width: 40px; height: 40px; border-radius: 12px; background: var(--night); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { height: 40px; padding: 0 14px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card); font-weight: 600; font-size: 14px; }
+  .chip.on { border-color: var(--fire); background: var(--fire-soft); color: var(--fire-ink); }
+
+  .card { background: var(--card); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .geo { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 14px; border-radius: 12px; border: 0;
+    background: var(--blue-soft); color: var(--blue); font-weight: 800; font-size: 15px; width: 100%; }
+  .geo.ok { background: #ECFDF3; color: var(--ok); }
+  .field { width: 100%; height: 48px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 14px; background: #F8FAFC; font-weight: 600; font-size: 15px; }
+  textarea.field { height: auto; padding: 12px 14px; resize: none; }
+  .field:focus { outline: 2px solid var(--blue); outline-offset: 1px; border-color: transparent; }
+  .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 600; }
+  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  .price { display: flex; align-items: center; gap: 10px; }
+  .price .field { font-weight: 800; font-size: 24px; height: 56px; }
+  .price span { font-weight: 800; font-size: 24px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0 0; font-weight: 600; font-size: 14px; }
+  .switch { width: 52px; height: 30px; border-radius: 999px; border: 0; padding: 3px; background: #CBD2DC; display: flex; flex-shrink: 0; }
+  .switch::after { content: ""; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .15s; }
+  .switch[aria-checked="true"] { background: var(--fire); }
+  .switch[aria-checked="true"]::after { transform: translateX(22px); }
+  .disabled { opacity: .45; pointer-events: none; }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--card); border-top: 1px solid var(--line); display: none; }
+  .bar.show { display: block; }
+  .cta { width: 100%; height: 54px; border: 0; border-radius: 14px; background: var(--fire); color: #fff; font-weight: 800; font-size: 16px; }
+  .cta:disabled { background: #E7C3B0; }
+  .err { display: none; margin-top: 8px; text-align: center; font-size: 13px; font-weight: 600; color: #B91C1C; }
+  .wrap { max-width: 520px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 16px; }
+</style>
+</head>
+<body>
+
+<!-- ЭКРАН 1: что случилось -->
+<section class="screen active" id="home">
+  <div class="wrap">
+    <h1>Что случилось?</h1>
+
+    <button class="hero" data-cat="start">
+      <div class="top">
+        <div class="ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M3.3 7l17.4 10M20.7 7L3.3 17M9 4l3 2 3-2M9 20l3-2 3 2"/></svg></div>
+        <div class="badge">СРОЧНО</div>
+      </div>
+      <div>
+        <div class="t">Машина не заводится</div>
+        <div class="s">Отогрев, прикуривание, запуск в мороз</div>
+      </div>
+      <div class="bottom">
+        <div id="mastersLine">Мастера рядом откликнутся за минуты</div>
+        <div class="go">Вызвать <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>
+      </div>
+    </button>
+
+    <div class="grid">
+      <button class="tile" data-cat="jump">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M6 7V4.5h3V7M15 7V4.5h3V7M6 13.5h4M14 13.5h4M16 11.5v4"/></svg></div>
+        <div class="t">Прикурить</div><div class="s">Сел аккумулятор</div>
+      </button>
+      <button class="tile" data-cat="wheel">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v5.5M12 15.5V21M3 12h5.5M15.5 12H21"/></svg></div>
+        <div class="t">Колесо</div><div class="s">Прокол, замена</div>
+      </button>
+      <button class="tile" data-cat="tow">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 16V7h11v9M13 10h4l3 3v3h-7"/><circle cx="6.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg></div>
+        <div class="t">Эвакуатор</div><div class="s">В тёплый бокс</div>
+      </button>
+      <button class="tile" data-cat="fuel">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8l3 3v6a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg></div>
+        <div class="t">Топливо</div><div class="s">Замёрз дизель</div>
+      </button>
+      <button class="tile" data-cat="repair">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3 17.8 6.2 21l6.3-6.3a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/></svg></div>
+        <div class="t">Ремонт на месте</div><div class="s">Мастер приедет</div>
+      </button>
+      <button class="tile" data-cat="other">
+        <div class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg></div>
+        <div class="t">Другое</div><div class="s">Опишу сам</div>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ЭКРАН 2: заявка -->
+<section class="screen" id="form">
+  <div class="wrap">
+    <div class="head">
+      <div class="ico" id="formIcon"></div>
+      <h2 id="formTitle">Не заводится</h2>
+    </div>
+
+    <div id="symptomBlock" style="display:flex;flex-direction:column;gap:8px">
+      <div class="label">Что именно?</div>
+      <div class="chips" id="symptoms"></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Где стоит машина</div>
+      <button class="geo" id="geoBtn" type="button">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        <span id="geoText">Определить моё местоположение</span>
+      </button>
+      <div class="or">или</div>
+      <label class="label" for="address" style="position:absolute;left:-9999px">Адрес</label>
+      <input class="field" id="address" placeholder="Напишите адрес: ул. Лермонтова, 62" autocomplete="street-address">
+    </div>
+
+    <div class="card">
+      <label class="label" for="car">Машина</label>
+      <input class="field" id="car" placeholder="Toyota Prado, А123ВЕ14">
+    </div>
+
+    <div class="card">
+      <label class="label" for="price">Ваша цена</label>
+      <div id="priceBox" style="display:flex;flex-direction:column;gap:10px">
+        <div class="price">
+          <input class="field" id="price" inputmode="numeric" value="2500">
+          <span>₽</span>
+        </div>
+        <div class="chips" id="priceChips"></div>
+      </div>
+      <div class="toggle">
+        <span id="masterPriceLabel">Пусть мастер предложит цену</span>
+        <button class="switch" id="masterPrice" role="switch" aria-checked="false" aria-labelledby="masterPriceLabel" type="button"></button>
+      </div>
+      <div class="hint">Мастера увидят вашу цену и могут предложить свою. Оплата мастеру на месте.</div>
+    </div>
+
+    <div class="card">
+      <label class="label" for="comment">Комментарий</label>
+      <textarea class="field" id="comment" rows="2" placeholder="Например: стоит с вечера, подъезд с улицы"></textarea>
+    </div>
+  </div>
+</section>
+
+<div class="bar" id="bar">
+  <div class="wrap" style="gap:0">
+    <button class="cta" id="send" type="button" disabled>Найти мастера</button>
+    <div class="err" id="err"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var params = new URLSearchParams(location.search);
+
+  var CATS = {
+    start:  { title: "Не заводится", symptoms: ["Не крутит стартер", "Крутит, не схватывает", "Замёрз дизель", "Не знаю"] },
+    jump:   { title: "Прикурить", symptoms: [] },
+    wheel:  { title: "Колесо", symptoms: ["Прокол", "Нужна замена", "Нет запаски"] },
+    tow:    { title: "Эвакуатор", symptoms: ["В тёплый бокс", "В сервис", "После ДТП"] },
+    fuel:   { title: "Топливо", symptoms: ["Замёрз дизель", "Кончилось топливо"] },
+    repair: { title: "Ремонт на месте", symptoms: [] },
+    other:  { title: "Другое", symptoms: [] }
+  };
+  var S = { cat: null, symptom: null, lat: null, lon: null, masterPrice: false };
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  if (tg) {
+    tg.ready(); tg.expand();
+    try { tg.setHeaderColor("#F2F4F7"); tg.setBackgroundColor("#F2F4F7"); } catch (e) {}
+  }
+  if (params.get("car")) $("car").value = params.get("car");
+  var masters = parseInt(params.get("masters"), 10);
+  if (masters > 0) $("mastersLine").innerHTML = "Мастеров на линии: <b>" + masters + "</b>";
+
+  function haptic() { try { tg && tg.HapticFeedback.impactOccurred("light"); } catch (e) {} }
+
+  // --- навигация
+  function show(id) {
+    document.querySelectorAll(".screen").forEach(function (s) { s.classList.toggle("active", s.id === id); });
+    $("bar").classList.toggle("show", id === "form");
+    window.scrollTo(0, 0);
+    if (tg && tg.BackButton) { id === "form" ? tg.BackButton.show() : tg.BackButton.hide(); }
+  }
+  if (tg && tg.BackButton) tg.BackButton.onClick(function () { show("home"); });
+
+  document.querySelectorAll("[data-cat]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      haptic();
+      S.cat = b.dataset.cat; S.symptom = null;
+      var c = CATS[S.cat];
+      $("formTitle").textContent = c.title;
+      $("formIcon").innerHTML = b.querySelector(".ico svg").outerHTML;
+      $("formIcon").firstChild.setAttribute("stroke", "#fff");
+      var box = $("symptoms"); box.innerHTML = "";
+      c.symptoms.forEach(function (t) {
+        var chip = document.createElement("button");
+        chip.type = "button"; chip.className = "chip"; chip.textContent = t;
+        chip.addEventListener("click", function () {
+          S.symptom = S.symptom === t ? null : t;
+          box.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("on", x.textContent === S.symptom); });
+        });
+        box.appendChild(chip);
+      });
+      $("symptomBlock").style.display = c.symptoms.length ? "flex" : "none";
+      show("form"); validate();
+    });
+  });
+
+  // --- геопозиция
+  function setGeo(lat, lon) {
+    S.lat = lat; S.lon = lon;
+    $("geoBtn").classList.add("ok");
+    $("geoText").textContent = "Местоположение получено";
+    validate();
+  }
+  function geoFail(msg) {
+    $("geoText").textContent = msg || "Не получилось — напишите адрес ниже";
+    $("address").focus();
+  }
+  function browserGeo() {
+    if (!navigator.geolocation) return geoFail();
+    navigator.geolocation.getCurrentPosition(
+      function (p) { setGeo(p.coords.latitude, p.coords.longitude); },
+      function () { geoFail("Нет доступа к геопозиции — напишите адрес"); },
+      { enableHighAccuracy: true, timeout: 15000 });
+  }
+  $("geoBtn").addEventListener("click", function () {
+    haptic();
+    $("geoText").textContent = "Определяю…";
+    var lm = tg && tg.LocationManager;
+    if (lm && tg.isVersionAtLeast && tg.isVersionAtLeast("8.0")) {
+      lm.init(function () {
+        if (!lm.isLocationAvailable) return browserGeo();
+        lm.getLocation(function (loc) {
+          if (loc) setGeo(loc.latitude, loc.longitude);
+          else if (lm.isAccessRequested && !lm.isAccessGranted) {
+            geoFail("Доступ к геопозиции выключен — напишите адрес");
+            try { lm.openSettings(); } catch (e) {}
+          } else browserGeo();
+        });
+      });
+    } else browserGeo();
+  });
+  $("address").addEventListener("input", validate);
+
+  // --- цена
+  [1000, 1500, 2000, 2500, 3000, 5000].forEach(function (v) {
+    var chip = document.createElement("button");
+    chip.type = "button"; chip.className = "chip"; chip.textContent = v.toLocaleString("ru-RU") + " ₽";
+    chip.addEventListener("click", function () { $("price").value = v; markPrice(); validate(); });
+    $("priceChips").appendChild(chip);
+  });
+  function priceValue() { return parseInt(($("price").value || "").replace(/\D/g, ""), 10) || 0; }
+  function markPrice() {
+    var v = priceValue();
+    $("priceChips").querySelectorAll(".chip").forEach(function (c) {
+      c.classList.toggle("on", parseInt(c.textContent.replace(/\D/g, ""), 10) === v);
+    });
+  }
+  $("price").addEventListener("input", function () { markPrice(); validate(); });
+  $("masterPrice").addEventListener("click", function () {
+    S.masterPrice = !S.masterPrice;
+    this.setAttribute("aria-checked", String(S.masterPrice));
+    $("priceBox").classList.toggle("disabled", S.masterPrice);
+    validate();
+  });
+  markPrice();
+
+  // --- отправка
+  function validate() {
+    var hasPlace = S.lat !== null || $("address").value.trim().length >= 3;
+    var hasPrice = S.masterPrice || (priceValue() > 0 && priceValue() <= 1000000);
+    $("send").disabled = !(S.cat && hasPlace && hasPrice);
+  }
+  $("send").addEventListener("click", function () {
+    var data = {
+      v: 1,
+      category: S.cat,
+      symptom: S.symptom,
+      lat: S.lat, lon: S.lon,
+      address: S.lat === null ? $("address").value.trim().slice(0, 200) : null,
+      car: $("car").value.trim().slice(0, 100) || null,
+      comment: $("comment").value.trim().slice(0, 500) || null,
+      price: S.masterPrice ? null : priceValue()
+    };
+    if (tg && tg.sendData && tg.initData !== undefined) {
+      try { tg.HapticFeedback.notificationOccurred("success"); } catch (e) {}
+      tg.sendData(JSON.stringify(data));   // Telegram закроет окно и передаст заявку боту
+    } else {
+      $("err").style.display = "block";
+      $("err").textContent = "Откройте эту страницу из бота в Telegram, чтобы отправить заявку.";
+      console.log(data);
+    }
+  });
+})();
+</script>
+</body>
+</html>
